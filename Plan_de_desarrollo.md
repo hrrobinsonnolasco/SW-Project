@@ -30,25 +30,25 @@ Desarrollar una aplicación web ligera enfocada en compartir en tiempo real la p
 
 ### Fase 2: Captura y Lógica de Señalización
 
-- [ ] Implementar la API `getDisplayMedia` en el cliente del Emisor para capturar la ventana/pantalla con audio del sistema activo.
-- [ ] Desarrollar la lógica de creación de "salas" asíncronas en el servidor mediante Socket.io (`/stream/:id`).
-- [ ] Programar el intercambio de ofertas y respuestas SDP (Session Description Protocol) entre Emisor y Receptor a través de WebSockets.
-- [ ] Programar el intercambio de candidatos ICE (Interactive Connectivity Establishment) en tiempo real para el descubrimiento de red.
+- [x] Implementar la API `getDisplayMedia` en el cliente del Emisor para capturar la ventana/pantalla con audio del sistema activo.
+- [x] Desarrollar la lógica de creación de "salas" asíncronas en el servidor mediante Socket.io (`/stream/:id`).
+- [x] Programar el intercambio de ofertas y respuestas SDP (Session Description Protocol) entre Emisor y Receptor a través de WebSockets.
+- [x] Programar el intercambio de candidatos ICE (Interactive Connectivity Establishment) en tiempo real para el descubrimiento de red.
 
 
 
 ### Fase 3: Transmisión y Estabilidad WebRTC
 
-- [ ] Conectar el flujo multimedia (`MediaStream`) entrante al elemento `<video>` del Receptor.
-- [ ] Ajustar los constraints de WebRTC en el emisor para optimizar la transmisión de audio del sistema (desactivar `echoCancellation` y `noiseSuppression` para fidelidad de películas).
-- [ ] Configurar la lista de servidores `iceServers` (STUN/TURN) en la configuración de `RTCPeerConnection`.
-- [ ] Implementar eventos de limpieza: si el Emisor cierra la ventana o desconecta el flujo, destruir la conexión remota y notificar al Receptor.
+- [x] Conectar el flujo multimedia (`MediaStream`) entrante al elemento `<video>` del Receptor.
+- [x] Ajustar los constraints de WebRTC en el emisor para optimizar la transmisión de audio del sistema (desactivar `echoCancellation` y `noiseSuppression` para fidelidad de películas).
+- [x] Configurar la lista de servidores `iceServers` (STUN/TURN) en la configuración de `RTCPeerConnection`.
+- [x] Implementar eventos de limpieza: si el Emisor cierra la ventana o desconecta el flujo, destruir la conexión remota y notificar al Receptor.
 
 
 
 ### Fase 4: Despliegue en Producción
 
-- [ ] Configurar variables de entorno en el Frontend para apuntar dinámicamente a la URL de producción del servidor.
+- [x] Configurar variables de entorno en el Frontend para apuntar dinámicamente a la URL de producción del servidor.
 - [ ] Desplegar el Backend de Node.js en Render/Railway.
 - [ ] Desplegar el Frontend en Vercel y verificar la conexión P2P usando datos móviles en el dispositivo receptor.
 

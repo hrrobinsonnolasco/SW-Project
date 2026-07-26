@@ -1,4 +1,7 @@
-import { useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
+import { DISPLAY_MEDIA_CONSTRAINTS } from '../config/webrtc'
+import { useSignaling } from '../hooks/useSignaling'
+import { useWebRTC } from '../hooks/useWebRTC'
 
 function generateStreamId() {
   return crypto.randomUUID().slice(0, 8)
@@ -6,23 +9,92 @@ function generateStreamId() {
 
 export default function EmitterPage() {
   const [streamId, setStreamId] = useState(null)
+  const [localStream, setLocalStream] = useState(null)
   const [isSharing, setIsSharing] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [error, setError] = useState(null)
+  const [connectionState, setConnectionState] = useState('idle')
 
-  const shareUrl = streamId
-    ? `${window.location.origin}/stream/${streamId}`
-    : ''
+  const localStreamRef = useRef(null)
+  const webrtcActionsRef = useRef({})
 
-  function handleStart() {
-    const id = generateStreamId()
-    setStreamId(id)
-    setIsSharing(true)
-  }
+  const shareUrl = streamId ? `${window.location.origin}/stream/${streamId}` : ''
 
-  function handleStop() {
+  const resetState = useCallback(() => {
+    setLocalStream(null)
     setIsSharing(false)
     setStreamId(null)
     setCopied(false)
+    setConnectionState('idle')
+    setError(null)
+  }, [])
+
+  const stopCapture = useCallback(() => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => track.stop())
+      localStreamRef.current = null
+    }
+  }, [])
+
+  const signaling = useSignaling({
+    roomId: streamId,
+    role: 'emitter',
+    enabled: isSharing && !!streamId,
+    handlers: {
+      onReceiverJoined: () => {
+        webrtcActionsRef.current.createOffer?.()
+      },
+      onAnswer: (answer) => {
+        webrtcActionsRef.current.handleAnswer?.(answer)
+      },
+      onIceCandidate: (candidate) => {
+        webrtcActionsRef.current.addIceCandidate?.(candidate)
+      },
+    },
+  })
+
+  const webrtc = useWebRTC({
+    role: 'emitter',
+    localStream,
+    signaling,
+    onConnectionStateChange: setConnectionState,
+  })
+
+  webrtcActionsRef.current = webrtc
+
+  const handleStop = useCallback(() => {
+    signaling.emitStreamEnded()
+    webrtc.closePeerConnection()
+    stopCapture()
+    resetState()
+  }, [signaling, webrtc, stopCapture, resetState])
+
+  async function handleStart() {
+    setError(null)
+
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia(DISPLAY_MEDIA_CONSTRAINTS)
+      const id = generateStreamId()
+
+      localStreamRef.current = stream
+
+      stream.getVideoTracks()[0]?.addEventListener('ended', () => {
+        signaling.emitStreamEnded()
+        webrtc.closePeerConnection()
+        stopCapture()
+        resetState()
+      })
+
+      setStreamId(id)
+      setLocalStream(stream)
+      setIsSharing(true)
+    } catch (err) {
+      setError(
+        err.name === 'NotAllowedError'
+          ? 'Debes seleccionar una pantalla o ventana para compartir.'
+          : 'No se pudo iniciar la captura de pantalla.',
+      )
+    }
   }
 
   async function handleCopyLink() {
@@ -31,6 +103,13 @@ export default function EmitterPage() {
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
+
+  const statusLabel = (() => {
+    if (!isSharing) return 'Inactivo'
+    if (connectionState === 'connected') return 'Conectado con receptor'
+    if (connectionState === 'connecting') return 'Conectando con receptor...'
+    return 'Esperando receptor'
+  })()
 
   return (
     <div className="min-h-svh bg-slate-950 text-slate-100">
@@ -52,16 +131,22 @@ export default function EmitterPage() {
           <div className="flex items-center justify-between rounded-xl bg-slate-950/80 px-4 py-3">
             <div>
               <p className="text-xs uppercase tracking-wide text-slate-500">Estado</p>
-              <p className="font-medium text-white">
-                {isSharing ? 'Transmitiendo' : 'Inactivo'}
-              </p>
+              <p className="font-medium text-white">{statusLabel}</p>
             </div>
             <span
               className={`h-3 w-3 rounded-full ${
-                isSharing ? 'bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]' : 'bg-slate-600'
+                isSharing
+                  ? 'bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]'
+                  : 'bg-slate-600'
               }`}
             />
           </div>
+
+          {error && (
+            <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              {error}
+            </p>
+          )}
 
           {!isSharing ? (
             <button

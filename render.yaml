@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: share-window-signaling
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: CLIENT_ORIGIN
+        sync: false
